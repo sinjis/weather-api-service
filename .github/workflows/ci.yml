@@ -1,4 +1,4 @@
-name: CI
+name: CI (debug)
 
 on:
   push:
@@ -17,14 +17,50 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Show Python & environment info
+        run: |
+          python --version
+          which python
+          pip --version
+          echo "PWD=$(pwd)"
+          echo "Listing repo root:"
+          ls -la
+          echo "Listing src/:"
+          ls -la src || true
+          echo "Listing tests/:"
+          ls -la tests || true
+
+      - name: Install dependencies (verbose)
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-          pip install -e .[dev]
+          pip install -e . -v
+          pip install -e .[dev] -v
+          pip list
 
-      - name: Run tests
+      - name: Verify package import explicitly
+        run: |
+          python - << 'EOF'
+          import sys
+          print("sys.path:")
+          for p in sys.path:
+              print(" ", p)
+
+          print("\nTrying imports...")
+          import weather_api_service
+          print("✅ import weather_api_service OK")
+
+          from weather_api_service import service
+          print("✅ import weather_api_service.service OK")
+          EOF
+
+      - name: Collect tests only (no execution)
         env:
           PYTHONPATH: src
         run: |
-          python -m pytest -vv --maxfail=1
+          python -m pytest --collect-only -vv
+
+      - name: Run tests with max verbosity
+        env:
+          PYTHONPATH: src
+        run: |
+          python -m pytest -vvv --maxfail=1 --showlocals
