@@ -27,4 +27,4 @@ jobs:
         env:
           PYTHONPATH: src
         run: |
-          pytest
+          python -m pytest -vv --maxfail=1
