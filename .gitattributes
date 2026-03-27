@@ -1,0 +1,14 @@
+# Default: keep LF in repo, convert to OS line endings on checkout when needed
+* text=auto eol=lf
+
+# Windows scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Optional: keep shell scripts LF
+*.sh text eol=lf
+
+# Data formats
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
