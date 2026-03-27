@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -19,10 +19,24 @@ dev = [
   "coverage>=7.0.0",
 ]
 
+# --- IMPORTANT FOR src/ LAYOUT ---
+# Tell setuptools that packages live under src/
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# --- pytest config ---
 [tool.pytest.ini_options]
-addopts = "-q --cov=weather_api_service --cov-report=term-missing"
+# Ensure src/ is on sys.path during collection/execution in CI
+pythonpath = ["src"]
 testpaths = ["tests"]
 
+# Enforce deterministic line coverage (not branch coverage)
+addopts = "-q --cov=weather_api_service --cov-report=term-missing"
+
+# --- coverage config ---
 [tool.coverage.run]
 source = ["weather_api_service"]
 
