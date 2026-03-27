@@ -1,4 +1,4 @@
-name: CI (hard-debug)
+name: CI (forced-debug)
 
 on:
   push:
@@ -17,53 +17,50 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Environment diagnostics
+      - name: Show repo structure
         run: |
-          set -x
-          python --version
-          pip --version
-          echo "PWD=$(pwd)"
-          echo "Root:"
+          echo "=== ROOT ==="
           ls -la
-          echo "src/:"
+          echo "=== SRC ==="
           find src -type f || true
-          echo "tests/:"
+          echo "=== TESTS ==="
           find tests -type f || true
 
-      - name: Install dependencies (full trace)
+      - name: Install dependencies (NO coverage)
         run: |
-          set -x
           python -m pip install --upgrade pip
-          pip install -e . -v
-          pip install -e .[dev] -v
-          pip list
+          pip install Flask pytest
 
-      - name: Python import sanity check
+      - name: Import sanity check
         run: |
-          set -x
           python - << 'EOF'
           import sys
           print("sys.path:")
           for p in sys.path:
               print(" ", p)
 
-          print("\nImport checks:")
+          print("\nTrying import:")
           import weather_api_service
-          print("✅ weather_api_service OK")
+          print("✅ weather_api_service imported")
           EOF
 
-      - name: Pytest configuration dump
+      - name: Run pytest (capture exit code manually)
+        continue-on-error: true
         env:
           PYTHONPATH: src
         run: |
           set -x
-          python -m pytest --version
-          python -m pytest --trace-config
-          python -m pytest --collect-only -vv -s
+          python -m pytest -vv -s --maxfail=1
+          echo "PYTEST_EXIT_CODE=$?" > pytest_exit_code.txt
 
-      - name: Pytest execution (no capture, stop on first error)
-        env:
-          PYTHONPATH: src
+      - name: Show pytest exit code
         run: |
-          set -x
-          python -m pytest -vv -s --maxfail=1 --showlocals
+          cat pytest_exit_code.txt
+
+      - name: Fail job if pytest failed
+        run: |
+          CODE=$(cut -d= -f2 pytest_exit_code.txt)
+          if [ "$CODE" != "0" ]; then
+            echo "❌ pytest failed with exit code $CODE"
+            exit 1
+          fi
