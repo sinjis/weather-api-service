@@ -1,0 +1,9 @@
+
+[run]
+branch = True
+source =
+    weather_api_service
+
+[report]
+fail_under = 100
+show_missing = True
