@@ -1,4 +1,4 @@
-name: CI (forensic-debug)
+name: CI (hard-debug)
 
 on:
   push:
@@ -17,18 +17,20 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Show repo structure
+      - name: Environment diagnostics
         run: |
-          echo "=== PWD ==="
-          pwd
-          echo "=== ROOT FILES ==="
+          set -x
+          python --version
+          pip --version
+          echo "PWD=$(pwd)"
+          echo "Root:"
           ls -la
-          echo "=== SRC TREE ==="
+          echo "src/:"
           find src -type f || true
-          echo "=== TESTS TREE ==="
+          echo "tests/:"
           find tests -type f || true
 
-      - name: Install dependencies (full verbose)
+      - name: Install dependencies (full trace)
         run: |
           set -x
           python -m pip install --upgrade pip
@@ -36,7 +38,7 @@ jobs:
           pip install -e .[dev] -v
           pip list
 
-      - name: Sanity check imports
+      - name: Python import sanity check
         run: |
           set -x
           python - << 'EOF'
@@ -45,22 +47,21 @@ jobs:
           for p in sys.path:
               print(" ", p)
 
-          print("\nTrying imports:")
+          print("\nImport checks:")
           import weather_api_service
-          print("✅ weather_api_service imported")
-
-          from weather_api_service import service
-          print("✅ weather_api_service.service imported")
+          print("✅ weather_api_service OK")
           EOF
 
-      - name: Pytest collection (no execution)
+      - name: Pytest configuration dump
         env:
           PYTHONPATH: src
         run: |
           set -x
+          python -m pytest --version
+          python -m pytest --trace-config
           python -m pytest --collect-only -vv -s
 
-      - name: Pytest execution (no capture)
+      - name: Pytest execution (no capture, stop on first error)
         env:
           PYTHONPATH: src
         run: |
