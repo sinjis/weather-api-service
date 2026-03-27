@@ -1,4 +1,4 @@
-name: CI (debug)
+name: CI (forensic-debug)
 
 on:
   push:
@@ -17,50 +17,52 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Show Python & environment info
+      - name: Show repo structure
         run: |
-          python --version
-          which python
-          pip --version
-          echo "PWD=$(pwd)"
-          echo "Listing repo root:"
+          echo "=== PWD ==="
+          pwd
+          echo "=== ROOT FILES ==="
           ls -la
-          echo "Listing src/:"
-          ls -la src || true
-          echo "Listing tests/:"
-          ls -la tests || true
+          echo "=== SRC TREE ==="
+          find src -type f || true
+          echo "=== TESTS TREE ==="
+          find tests -type f || true
 
-      - name: Install dependencies (verbose)
+      - name: Install dependencies (full verbose)
         run: |
+          set -x
           python -m pip install --upgrade pip
           pip install -e . -v
           pip install -e .[dev] -v
           pip list
 
-      - name: Verify package import explicitly
+      - name: Sanity check imports
         run: |
+          set -x
           python - << 'EOF'
           import sys
           print("sys.path:")
           for p in sys.path:
               print(" ", p)
 
-          print("\nTrying imports...")
+          print("\nTrying imports:")
           import weather_api_service
-          print("✅ import weather_api_service OK")
+          print("✅ weather_api_service imported")
 
           from weather_api_service import service
-          print("✅ import weather_api_service.service OK")
+          print("✅ weather_api_service.service imported")
           EOF
 
-      - name: Collect tests only (no execution)
+      - name: Pytest collection (no execution)
         env:
           PYTHONPATH: src
         run: |
-          python -m pytest --collect-only -vv
+          set -x
+          python -m pytest --collect-only -vv -s
 
-      - name: Run tests with max verbosity
+      - name: Pytest execution (no capture)
         env:
           PYTHONPATH: src
         run: |
-          python -m pytest -vvv --maxfail=1 --showlocals
+          set -x
+          python -m pytest -vv -s --maxfail=1 --showlocals
